@@ -88,28 +88,46 @@ impl DatabaseConfiguration {
     ///
     /// At minima, the database host and port must be provided.
     pub fn postgres() -> Result<Option<DatabaseConfiguration>> {
-        let host: Option<String> = get_env(OCKAM_POSTGRES_HOST)?;
-        let port: Option<u16> = get_env(OCKAM_POSTGRES_PORT)?;
-        let database_name: String =
-            get_env(OCKAM_POSTGRES_DATABASE_NAME)?.unwrap_or("postgres".to_string());
+        // if host doesn't set in configuration return "localhost"
+        let host: String = match get_env(OCKAM_POSTGRES_HOST) {
+            Ok(x) => x.unwrap_or("127.0.0.1".into()),
+            Err(err) => {
+                eprintln!("{err}");
+                "127.0.0.1".into()
+            }
+        };
+        // if port doesn't set in configuration return "8123"
+        let port: u16 = match get_env(OCKAM_POSTGRES_PORT) {
+            Ok(x) => x.unwrap_or(8123),
+            Err(err) => {
+                eprintln!("{err}");
+                8123
+            }
+        };
+        // if database name doesn't set in configuraion return "POSTGRES"
+        let database_name: String = match get_env(OCKAM_POSTGRES_DATABASE_NAME) {
+            Ok(x) => x.unwrap_or("POSTGRES".into()),
+            Err(err) => {
+                eprintln!("{err}");
+                "POSTGRES".into()
+            }
+        };
         let user: Option<String> = get_env(OCKAM_POSTGRES_USER)?;
         let password: Option<String> = get_env(OCKAM_POSTGRES_PASSWORD)?;
-        match (host, port) {
-            (Some(host), Some(port)) => match (user, password) {
-                (Some(user), Some(password)) => Ok(Some(DatabaseConfiguration::Postgres {
-                    host,
-                    port,
-                    database_name,
-                    user: Some(DatabaseUser::new(user, password)),
-                })),
-                _ => Ok(Some(DatabaseConfiguration::Postgres {
-                    host,
-                    port,
-                    database_name,
-                    user: None,
-                })),
-            },
-            _ => Ok(None),
+
+        match (user, password) {
+            (Some(user), Some(password)) => Ok(Some(DatabaseConfiguration::Postgres {
+                host,
+                port,
+                database_name,
+                user: Some(DatabaseUser::new(user, password)),
+            })),
+            _ => Ok(Some(DatabaseConfiguration::Postgres {
+                host,
+                port,
+                database_name,
+                user: None,
+            })),
         }
     }
 
