@@ -4,24 +4,28 @@ use tracing::{error, info};
 
 /// Return the ockam executable path either from the OCKAM env. variable or as `ockam`
 pub(crate) fn cli_bin() -> Result<String> {
-    let ockam_path = get_env("OCKAM")?;
-    match ockam_path {
-        Some(path) => Ok(path),
-        None => {
-            // check if the `ockam` command executable was bundled with the application
-            let mut current_executable = std::env::current_exe()?;
-            current_executable.pop();
-            current_executable.push("ockam");
-            match current_executable.into_os_string().into_string() {
-                Ok(path) => {
-                    if std::path::Path::new(&path).exists() {
-                        Ok(path)
-                    } else {
-                        Ok("ockam".to_string())
+    match get_env("OCKAM") {
+        Ok(x) => match x {
+            Some(path) => Ok(path),
+            None => {
+                let mut current_executable = std::env::current_exe()?;
+                current_executable.pop();
+                current_executable.push("ockam");
+                match current_executable.into_os_string().into_string() {
+                    Ok(path) => {
+                        if std::path::Path::new(&path).exists() {
+                            Ok(path)
+                        } else {
+                            Ok("ockam".to_string())
+                        }
                     }
+                    Err(_) => Ok("ockam".to_string()),
                 }
-                Err(_) => Ok("ockam".to_string()),
             }
+        },
+        Err(err) => {
+            eprintln!("{err}");
+            Ok("ockam".into())
         }
     }
 }
