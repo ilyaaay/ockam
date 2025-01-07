@@ -5,7 +5,7 @@ use crate::shared_args::TrustOpts;
 use crate::{Command as CommandTrait, CommandGlobalOpts};
 use miette::Context as _;
 use miette::IntoDiagnostic;
-use ockam_core::env::get_env_with_default;
+use ockam_core::env::{get_env, get_env_with_default};
 use ockam_node::Context;
 use rand::random;
 use std::env::current_exe;
@@ -197,10 +197,12 @@ pub async fn run_ockam(args: Vec<String>, quiet: bool) -> miette::Result<Child> 
     // On systems with non-obvious path setups (or during
     // development) re-executing the current binary is a more
     // deterministic way of starting a node.
-    let ockam_exe = current_exe().unwrap_or_else(|_| {
-        get_env_with_default("OCKAM", "ockam".to_string())
-            .unwrap()
-            .into()
+    let ockam_exe = current_exe().unwrap_or_else(|_| match get_env("OCKAM") {
+        Ok(x) => x.unwrap_or("ockam".into()),
+        Err(err) => {
+            eprintln!("{err}");
+            "ockam".into()
+        }
     });
 
     unsafe {
