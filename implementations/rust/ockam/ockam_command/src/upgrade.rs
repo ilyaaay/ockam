@@ -4,7 +4,7 @@ use colorful::Colorful;
 use miette::{miette, Error, IntoDiagnostic, Result, WrapErr};
 use ockam_api::colors::{color_primary, color_uri};
 use ockam_api::{fmt_log, fmt_warn};
-use ockam_core::env::get_env_with_default;
+use ockam_core::env::get_env;
 use serde::Deserialize;
 use std::env;
 use std::fmt::Display;
@@ -16,7 +16,13 @@ use url::Url;
 const RELEASE_TAG_NAME_PREFIX: &str = "ockam_v";
 
 fn upgrade_check_is_disabled() -> bool {
-    get_env_with_default("OCKAM_DISABLE_UPGRADE_CHECK", false).unwrap_or(false)
+    match get_env("OCKAM_DISABLE_UPGRADE_CHECK") {
+        Ok(x) => x.unwrap_or(false),
+        Err(err) => {
+            eprintln!("{err}");
+            false
+        }
+    }
 }
 
 #[derive(Deserialize, Debug)]
