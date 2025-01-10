@@ -13,7 +13,7 @@ use colorful::Colorful;
 use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
 use jaq_interpret::{Ctx, FilterT, ParseCtx, RcIter, Val};
 use miette::{miette, IntoDiagnostic};
-use ockam_core::env::get_env_with_default;
+use ockam_core::env::{get_env, get_env_with_default};
 use r3bl_rs_utils_core::{ch, ChUnit};
 use r3bl_tuify::{get_size, select_from_list, SelectionMode, StyleSheet};
 use serde::Serialize;
@@ -207,13 +207,28 @@ impl<W: TerminalWriter + Debug> Terminal<W> {
     fn should_disable_color(no_color: bool) -> bool {
         // If global argument `--no-color` is passed or the `NO_COLOR` env var is set, colors
         // will be stripped out from output messages. Otherwise, let the terminal decide.
-        no_color || get_env_with_default("NO_COLOR", false).unwrap_or(false)
+        no_color || {
+            match get_env("NO_COLOR") {
+                Ok(x) => x.unwrap_or(false),
+                Err(err) => {
+                    eprintln!("{err}");
+                    false
+                }
+            }
+        }
     }
 
     fn should_disable_user_input(no_input: bool) -> bool {
         // If global argument `--no-input` is passed or the `NO_INPUT` env var is set we won't be able
         // to ask the user for input.  Otherwise, let the terminal decide based on the `is_tty` value
-        no_input || get_env_with_default("NO_INPUT", false).unwrap_or(false)
+        no_input
+            || match get_env("NO_INPUT") {
+                Ok(x) => x.unwrap_or(false),
+                Err(err) => {
+                    eprintln!("{err}");
+                    false
+                }
+            }
     }
 
     pub fn set_quiet(&self) -> Self {

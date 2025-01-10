@@ -6,12 +6,18 @@ use std::process::Stdio;
 use console::Term;
 use miette::IntoDiagnostic;
 
-use ockam_core::env::get_env_with_default;
+use ockam_core::env::get_env;
 
 use crate::util::exitcode;
 
 pub fn render_help(help: clap::Error) {
-    let pager = get_env_with_default("PAGER", "less".to_string()).expect("Invalid PAGER value");
+    let pager: String = match get_env("PAPER") {
+        Ok(x) => x.unwrap_or("less".into()),
+        Err(err) => {
+            eprintln!("{err}");
+            "less".into()
+        }
+    };
     match which::which(pager) {
         Ok(pager_binary_path) => {
             paginate_with(pager_binary_path, help).expect("Failed to paginate help");

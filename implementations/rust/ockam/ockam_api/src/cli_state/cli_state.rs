@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 
 use ockam::SqlxDatabase;
-use ockam_core::env::get_env_with_default;
+use ockam_core::env::{get_env, get_env_with_default};
 use ockam_node::database::{DatabaseConfiguration, OCKAM_SQLITE_IN_MEMORY};
 use ockam_node::Executor;
 
@@ -128,7 +128,13 @@ impl CliState {
     /// Return a new CliState using a default directory to store its data or
     /// using an in-memory storage if the OCKAM_SQLITE_IN_MEMORY environment variable is set to true
     pub fn from_env() -> Result<Self> {
-        let in_memory = get_env_with_default::<bool>(OCKAM_SQLITE_IN_MEMORY, false)?;
+        let in_memory = match get_env(OCKAM_SQLITE_IN_MEMORY) {
+            Ok(x) => x.unwrap_or(false),
+            Err(err) => {
+                eprintln!("{err}");
+                false
+            }
+        };
         let mode = if in_memory {
             CliStateMode::InMemory
         } else {

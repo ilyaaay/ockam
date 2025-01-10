@@ -7,7 +7,7 @@ use ockam::identity::{
 };
 use ockam::tcp::TcpTransport;
 use ockam_core::compat::sync::Arc;
-use ockam_core::env::{get_env, get_env_with_default, FromString};
+use ockam_core::env::{get_env, FromString};
 use ockam_core::errcode::{Kind, Origin};
 use ockam_core::{Error, Result, Route};
 use ockam_multiaddr::MultiAddr;
@@ -236,7 +236,13 @@ impl NodeManager {
     pub fn controller_multiaddr() -> MultiAddr {
         let default_addr = MultiAddr::from_string(DEFAULT_CONTROLLER_ADDRESS)
             .unwrap_or_else(|_| panic!("invalid Controller address: {DEFAULT_CONTROLLER_ADDRESS}"));
-        get_env_with_default::<MultiAddr>(OCKAM_CONTROLLER_ADDR, default_addr).unwrap()
+        match get_env(OCKAM_CONTROLLER_ADDR) {
+            Ok(x) => x.unwrap_or(default_addr),
+            Err(err) => {
+                eprintln!("{err}");
+                default_addr
+            }
+        }
     }
 
     pub async fn controller_route() -> Result<Route> {
