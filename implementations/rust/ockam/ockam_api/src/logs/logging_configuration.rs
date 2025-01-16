@@ -270,9 +270,12 @@ pub fn logging_enabled() -> ockam_core::Result<LoggingEnabled> {
 
 /// Return the strategy to use for reporting logging/tracing errors
 pub fn global_error_handler() -> ockam_core::Result<GlobalErrorHandler> {
-    match get_env::<GlobalErrorHandler>(OCKAM_TRACING_GLOBAL_ERROR_HANDLER)? {
-        Some(v) => Ok(v),
-        None => Ok(GlobalErrorHandler::LogFile),
+    match get_env::<GlobalErrorHandler>(OCKAM_TRACING_GLOBAL_ERROR_HANDLER) {
+        Ok(x) => Ok(x.unwrap_or(GlobalErrorHandler::LogFile)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(GlobalErrorHandler::LogFile)
+        }
     }
 }
 
@@ -357,13 +360,25 @@ pub enum CratesFilter {
 
 impl CratesFilter {
     pub fn try_from_env() -> ockam_core::Result<Option<Self>> {
-        get_env_with_default(OCKAM_LOG_CRATES_FILTER, None)
+        match get_env(OCKAM_LOG_CRATES_FILTER) {
+            Ok(x) => Ok(x.unwrap_or(None)),
+            Err(err) => {
+                eprintln!("{err}");
+                Ok(None)
+            }
+        }
     }
 
     /// Use the verbose flag if set, otherwise use the environment variable or default to `Basic`
     pub fn from_verbose(verbose: u8) -> ockam_core::Result<Self> {
         Ok(match verbose {
-            0 => get_env_with_default(OCKAM_LOG_CRATES_FILTER, CratesFilter::Basic)?,
+            0 => match get_env(OCKAM_LOG_CRATES_FILTER) {
+                Ok(x) => x.unwrap_or(CratesFilter::Basic),
+                Err(err) => {
+                    eprintln!("{err}");
+                    CratesFilter::Basic
+                }
+            },
             1 => CratesFilter::Basic,
             2..=4 => CratesFilter::Core,
             _ => CratesFilter::All,

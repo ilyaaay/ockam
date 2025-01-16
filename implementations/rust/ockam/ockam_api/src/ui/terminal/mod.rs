@@ -13,7 +13,7 @@ use colorful::Colorful;
 use indicatif::{ProgressBar, ProgressDrawTarget, ProgressStyle};
 use jaq_interpret::{Ctx, FilterT, ParseCtx, RcIter, Val};
 use miette::{miette, IntoDiagnostic};
-use ockam_core::env::{get_env, get_env_with_default};
+use ockam_core::env::get_env;
 use r3bl_rs_utils_core::{ch, ChUnit};
 use r3bl_tuify::{get_size, select_from_list, SelectionMode, StyleSheet};
 use serde::Serialize;

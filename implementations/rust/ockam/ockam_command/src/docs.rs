@@ -1,7 +1,7 @@
 use crate::Result;
 use colorful::Colorful;
 use ockam_api::terminal::TextHighlighter;
-use ockam_core::env::get_env_with_default;
+use ockam_core::env::get_env;
 use once_cell::sync::Lazy;
 use syntect::{parsing::Regex, util::LinesWithEndings};
 
@@ -23,11 +23,23 @@ static HEADER_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new("^(Examples|Learn More|Feedback):$".into()));
 
 fn is_markdown() -> bool {
-    get_env_with_default("OCKAM_HELP_RENDER_MARKDOWN", false).unwrap_or(false)
+    match get_env("OCKAM_HELP_RENDER_MARKDOWN") {
+        Ok(x) => x.unwrap_or(false),
+        Err(err) => {
+            eprintln!("{err}");
+            false
+        }
+    }
 }
 
 pub(crate) fn hide() -> bool {
-    get_env_with_default("OCKAM_HELP_SHOW_HIDDEN", true).unwrap_or(true)
+    match get_env("OCKAM_HELP_SHOW_HIDDEN") {
+        Ok(x) => x.unwrap_or(false),
+        Err(err) => {
+            eprintln!("{err}");
+            true
+        }
+    }
 }
 
 pub(crate) fn about(text: &str) -> &'static str {
