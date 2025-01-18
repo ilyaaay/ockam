@@ -1,7 +1,7 @@
 use crate::config::LevelVar;
 use crate::logs::default_values::*;
 use crate::logs::env_variables::*;
-use ockam_core::env::{get_env, get_env_with_default, FromString};
+use ockam_core::env::{get_env, FromString};
 use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use tracing_core::Level;
@@ -268,7 +268,13 @@ fn log_max_files() -> ockam_core::Result<u64> {
 
 /// Return the format to use for log messages, taken from an environment variable
 fn log_format() -> ockam_core::Result<LogFormat> {
-    get_env_with_default(OCKAM_LOG_FORMAT, DEFAULT_LOG_FORMAT)
+    match get_env(OCKAM_LOG_FORMAT) {
+        Ok(x) => Ok(x.unwrap_or(DEFAULT_LOG_FORMAT)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(DEFAULT_LOG_FORMAT)
+        }
+    }
 }
 
 /// Return a value setting the logging on or off, taken from an environment variable

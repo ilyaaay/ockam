@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use tokio::sync::broadcast::{channel, Receiver, Sender};
 
 use ockam::SqlxDatabase;
-use ockam_core::env::{get_env, get_env_with_default};
+use ockam_core::env::get_env;
 use ockam_node::database::{DatabaseConfiguration, OCKAM_SQLITE_IN_MEMORY};
 use ockam_node::Executor;
 
@@ -341,12 +341,19 @@ impl CliState {
     ///
     /// If $OCKAM_HOME is not defined then $HOME is used instead
     pub(super) fn default_dir() -> Result<PathBuf> {
-        Ok(get_env_with_default::<PathBuf>(
-            "OCKAM_HOME",
-            home::home_dir()
-                .ok_or_else(|| CliStateError::InvalidPath("$HOME".to_string()))?
-                .join(".ockam"),
-        )?)
+        Ok(match get_env::<PathBuf>("OCKAM_HOME") {
+            Ok(x) => x.unwrap_or(
+                home::home_dir()
+                    .ok_or_else(|| CliStateError::InvalidPath("$HOME".to_string()))?
+                    .join(".ockam"),
+            ),
+            Err(err) => {
+                eprintln!("{err}");
+                home::home_dir()
+                    .ok_or_else(|| CliStateError::InvalidPath("$HOME".to_string()))?
+                    .join(".ockam")
+            }
+        })
     }
 }
 
