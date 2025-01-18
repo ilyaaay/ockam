@@ -243,12 +243,27 @@ pub fn logging_configuration(
 
 /// Return the maximum size of a log file, taken from an environment variable
 fn log_max_size_bytes() -> ockam_core::Result<u64> {
-    get_env_with_default(OCKAM_LOG_MAX_SIZE_MB, DEFAULT_LOG_MAX_SIZE_MB).map(|v| v * 1024 * 1024)
+    let x = match get_env(OCKAM_LOG_MAX_SIZE_MB) {
+        Ok(x) => Ok(x.unwrap_or(DEFAULT_LOG_MAX_SIZE_MB)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(DEFAULT_LOG_MAX_SIZE_MB)
+        }
+    };
+
+    x.map(|v| v * 1024 * 1024)
 }
 
 /// Return the maximum number of log files per node, taken from an environment variable
 fn log_max_files() -> ockam_core::Result<u64> {
-    get_env_with_default(OCKAM_LOG_MAX_FILES, DEFAULT_LOG_MAX_FILES)
+    // get_env_with_default(OCKAM_LOG_MAX_FILES, DEFAULT_LOG_MAX_FILES)
+    match get_env(OCKAM_LOG_MAX_FILES) {
+        Ok(x) => Ok(x.unwrap_or(DEFAULT_LOG_MAX_FILES)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(DEFAULT_LOG_MAX_FILES)
+        }
+    }
 }
 
 /// Return the format to use for log messages, taken from an environment variable
@@ -326,13 +341,19 @@ impl LogLevelWithCratesFilter {
     /// Return the log level based on the log level environment variable.
     /// Default to DEBUG.
     fn get_log_level_from_env() -> ockam_core::Result<Level> {
-        get_env_with_default(
-            OCKAM_LOG_LEVEL,
-            LevelVar {
+        let x = match get_env(OCKAM_LOG_LEVEL) {
+            Ok(x) => Ok(x.unwrap_or(LevelVar {
                 level: Level::DEBUG,
-            },
-        )
-        .map(|l| l.level)
+            })),
+            Err(err) => {
+                eprintln!("{err}");
+                Ok(LevelVar {
+                    level: Level::DEBUG,
+                })
+            }
+        };
+
+        x.map(|l| l.level)
     }
 
     pub fn add_crates(self, new: Vec<impl Into<String>>) -> Self {

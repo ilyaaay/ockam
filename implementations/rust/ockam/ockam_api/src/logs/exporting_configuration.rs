@@ -5,7 +5,8 @@ use crate::logs::default_values::*;
 use crate::logs::env_variables::*;
 use crate::logs::ExportingEnabled;
 use crate::CliState;
-use ockam_core::env::{get_env_with_default, FromString};
+use ockam_core::env::get_env;
+use ockam_core::env::FromString;
 use ockam_core::errcode::{Kind, Origin};
 use ockam_node::Executor;
 use std::env::current_exe;
@@ -224,18 +225,36 @@ impl OpenTelemetryEndpoint {
 /// Return true if the export of traces and log records is enabled,
 /// as decided by the OCKAM_OPENTELEMETRY_EXPORT environment variable.
 pub fn is_exporting_set() -> ockam_core::Result<bool> {
-    get_env_with_default(OCKAM_OPENTELEMETRY_EXPORT, true)
+    match get_env(OCKAM_OPENTELEMETRY_EXPORT) {
+        Ok(x) => Ok(x.unwrap_or(true)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(true)
+        }
+    }
 }
 
 /// Return true if traces and log records can be exported via a portal (when a project exists),
 /// as decided by the OCKAM_OPENTELEMETRY_EXPORT_VIA_PORTAL environment variable.
 pub fn is_exporting_via_portal_set() -> ockam_core::Result<bool> {
-    get_env_with_default(OCKAM_OPENTELEMETRY_EXPORT_VIA_PORTAL, false)
+    match get_env(OCKAM_OPENTELEMETRY_EXPORT_VIA_PORTAL) {
+        Ok(x) => Ok(x.unwrap_or(false)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(false)
+        }
+    }
 }
 
 /// Return true to display messages during the setup of the export
 pub fn is_export_debug_set() -> ockam_core::Result<bool> {
-    get_env_with_default(OCKAM_OPENTELEMETRY_EXPORT_DEBUG, false)
+    match get_env(OCKAM_OPENTELEMETRY_EXPORT_DEBUG) {
+        Ok(x) => Ok(x.unwrap_or(false)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(false)
+        }
+    }
 }
 
 /// Print a debug statement if OCKAM_OPENTELEMETRY_EXPORT_DEBUG is true
@@ -408,117 +427,182 @@ async fn get_opentelemetry_inlet(cli_state: &CliState) -> ockam_core::Result<Tcp
 /// Return the default HTTPs endpoint
 fn get_https_endpoint() -> ockam_core::Result<OpenTelemetryEndpoint> {
     Ok(OpenTelemetryEndpoint::HttpsEndpoint(
-        get_env_with_default(
-            OCKAM_OPENTELEMETRY_ENDPOINT,
-            UrlVar::new(ExportingConfiguration::default_opentelemetry_endpoint()?),
-        )?
+        match get_env(OCKAM_OPENTELEMETRY_ENDPOINT) {
+            Ok(x) => x.unwrap_or(UrlVar::new(
+                ExportingConfiguration::default_opentelemetry_endpoint()?,
+            )),
+            Err(err) => {
+                eprintln!("{err}");
+                UrlVar::new(ExportingConfiguration::default_opentelemetry_endpoint()?)
+            }
+        }
         .url,
     ))
 }
 
 /// Return true if the current user is an internal user
 fn is_ockam_developer() -> ockam_core::Result<bool> {
-    get_env_with_default(OCKAM_DEVELOPER, false)
+    match get_env(OCKAM_DEVELOPER) {
+        Ok(x) => Ok(x.unwrap_or(false)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(false)
+        }
+    }
 }
 
 /// Return the export timeout for spans, defined by an environment variable
 pub fn span_export_timeout() -> ockam_core::Result<Duration> {
-    get_env_with_default(OCKAM_SPAN_EXPORT_TIMEOUT, DEFAULT_EXPORT_TIMEOUT)
+    match get_env(OCKAM_SPAN_EXPORT_TIMEOUT) {
+        Ok(x) => Ok(x.unwrap_or(DEFAULT_EXPORT_TIMEOUT)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(DEFAULT_EXPORT_TIMEOUT)
+        }
+    }
 }
 
 /// Return the endpoint connection timeout, for a background node, defined by an environment variable
 fn opentelemetry_endpoint_background_connection_timeout() -> ockam_core::Result<Duration> {
-    get_env_with_default(
-        OCKAM_BACKGROUND_OPENTELEMETRY_ENDPOINT_CONNECTION_TIMEOUT,
-        DEFAULT_OPENTELEMETRY_ENDPOINT_BACKGROUND_CONNECTION_TIMEOUT,
-    )
+    match get_env(OCKAM_BACKGROUND_OPENTELEMETRY_ENDPOINT_CONNECTION_TIMEOUT) {
+        Ok(x) => Ok(x.unwrap_or(DEFAULT_OPENTELEMETRY_ENDPOINT_BACKGROUND_CONNECTION_TIMEOUT)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(DEFAULT_OPENTELEMETRY_ENDPOINT_BACKGROUND_CONNECTION_TIMEOUT)
+        }
+    }
 }
 
 /// Return the endpoint connection timeout, for a foreground command, defined by an environment variable
 fn opentelemetry_endpoint_foreground_connection_timeout() -> ockam_core::Result<Duration> {
-    get_env_with_default(
-        OCKAM_FOREGROUND_OPENTELEMETRY_ENDPOINT_CONNECTION_TIMEOUT,
-        DEFAULT_OPENTELEMETRY_ENDPOINT_FOREGROUND_CONNECTION_TIMEOUT,
-    )
+    match get_env(OCKAM_FOREGROUND_OPENTELEMETRY_ENDPOINT_CONNECTION_TIMEOUT) {
+        Ok(x) => Ok(x.unwrap_or(DEFAULT_OPENTELEMETRY_ENDPOINT_FOREGROUND_CONNECTION_TIMEOUT)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(DEFAULT_OPENTELEMETRY_ENDPOINT_FOREGROUND_CONNECTION_TIMEOUT)
+        }
+    }
 }
 
 /// Return the delay between the export of 2 spans batches, for a foreground command, defined by an environment variable
 fn foreground_span_export_scheduled_delay() -> ockam_core::Result<Duration> {
-    get_env_with_default(
-        OCKAM_FOREGROUND_SPAN_EXPORT_SCHEDULED_DELAY,
-        DEFAULT_FOREGROUND_EXPORT_SCHEDULED_DELAY,
-    )
+    match get_env(OCKAM_FOREGROUND_SPAN_EXPORT_SCHEDULED_DELAY) {
+        Ok(x) => Ok(x.unwrap_or(DEFAULT_FOREGROUND_EXPORT_SCHEDULED_DELAY)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(DEFAULT_FOREGROUND_EXPORT_SCHEDULED_DELAY)
+        }
+    }
 }
 
 /// Return the delay between the export of 2 spans batches, for a background node, defined by an environment variable
 fn background_span_export_scheduled_delay() -> ockam_core::Result<Duration> {
-    get_env_with_default(
-        OCKAM_BACKGROUND_SPAN_EXPORT_SCHEDULED_DELAY,
-        DEFAULT_BACKGROUND_EXPORT_SCHEDULED_DELAY,
-    )
+    match get_env(OCKAM_BACKGROUND_SPAN_EXPORT_SCHEDULED_DELAY) {
+        Ok(x) => Ok(x.unwrap_or(DEFAULT_BACKGROUND_EXPORT_SCHEDULED_DELAY)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(DEFAULT_BACKGROUND_EXPORT_SCHEDULED_DELAY)
+        }
+    }
 }
 
 /// Return the size of the queue used to batch spans, defined by an environment variable
 fn span_export_queue_size() -> ockam_core::Result<u16> {
-    get_env_with_default(OCKAM_SPAN_EXPORT_QUEUE_SIZE, DEFAULT_SPAN_EXPORT_QUEUE_SIZE)
+    match get_env(OCKAM_SPAN_EXPORT_QUEUE_SIZE) {
+        Ok(x) => Ok(x.unwrap_or(DEFAULT_SPAN_EXPORT_QUEUE_SIZE)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(DEFAULT_SPAN_EXPORT_QUEUE_SIZE)
+        }
+    }
 }
 
 /// Return the size of the queue used to batch log records, defined by an environment variable
 fn log_export_queue_size() -> ockam_core::Result<u16> {
-    get_env_with_default(OCKAM_LOG_EXPORT_QUEUE_SIZE, DEFAULT_LOG_EXPORT_QUEUE_SIZE)
+    match get_env(OCKAM_LOG_EXPORT_QUEUE_SIZE) {
+        Ok(x) => Ok(x.unwrap_or(DEFAULT_LOG_EXPORT_QUEUE_SIZE)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(DEFAULT_LOG_EXPORT_QUEUE_SIZE)
+        }
+    }
 }
 
 /// Return the export timeout for log records, defined by an environment variable
 pub fn log_export_timeout() -> ockam_core::Result<Duration> {
-    get_env_with_default(OCKAM_LOG_EXPORT_TIMEOUT, DEFAULT_EXPORT_TIMEOUT)
+    match get_env(OCKAM_LOG_EXPORT_TIMEOUT) {
+        Ok(x) => Ok(x.unwrap_or(DEFAULT_EXPORT_TIMEOUT)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(DEFAULT_EXPORT_TIMEOUT)
+        }
+    }
 }
 
 /// Return the delay between the export of 2 logs batches, for a foreground command, defined by an environment variable
 pub fn foreground_log_export_scheduled_delay() -> ockam_core::Result<Duration> {
-    get_env_with_default(
-        OCKAM_FOREGROUND_LOG_EXPORT_SCHEDULED_DELAY,
-        DEFAULT_FOREGROUND_EXPORT_SCHEDULED_DELAY,
-    )
+    match get_env(OCKAM_FOREGROUND_LOG_EXPORT_SCHEDULED_DELAY) {
+        Ok(x) => Ok(x.unwrap_or(DEFAULT_FOREGROUND_EXPORT_SCHEDULED_DELAY)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(DEFAULT_FOREGROUND_EXPORT_SCHEDULED_DELAY)
+        }
+    }
 }
 
 /// Return the delay between the export of 2 logs batches, for a background node, defined by an environment variable
 pub fn background_log_export_scheduled_delay() -> ockam_core::Result<Duration> {
-    get_env_with_default(
-        OCKAM_BACKGROUND_LOG_EXPORT_SCHEDULED_DELAY,
-        DEFAULT_BACKGROUND_EXPORT_SCHEDULED_DELAY,
-    )
+    match get_env(OCKAM_BACKGROUND_LOG_EXPORT_SCHEDULED_DELAY) {
+        Ok(x) => Ok(x.unwrap_or(DEFAULT_BACKGROUND_EXPORT_SCHEDULED_DELAY)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(DEFAULT_BACKGROUND_EXPORT_SCHEDULED_DELAY)
+        }
+    }
 }
 
 /// Return the maximum time for sending log record batches when using a foreground node
 pub fn foreground_log_export_cutoff() -> ockam_core::Result<Duration> {
-    get_env_with_default(
-        OCKAM_FOREGROUND_LOG_EXPORT_CUTOFF,
-        DEFAULT_FOREGROUND_LOG_EXPORT_CUTOFF,
-    )
+    match get_env(OCKAM_FOREGROUND_LOG_EXPORT_CUTOFF) {
+        Ok(x) => Ok(x.unwrap_or(DEFAULT_FOREGROUND_LOG_EXPORT_CUTOFF)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(DEFAULT_FOREGROUND_LOG_EXPORT_CUTOFF)
+        }
+    }
 }
 
 /// Return the maximum time for sending span batches when using a foreground node
 pub fn foreground_span_export_portal_cutoff() -> ockam_core::Result<Duration> {
-    get_env_with_default(
-        OCKAM_FOREGROUND_SPAN_EXPORT_CUTOFF,
-        DEFAULT_FOREGROUND_SPAN_EXPORT_CUTOFF,
-    )
+    match get_env(OCKAM_FOREGROUND_SPAN_EXPORT_CUTOFF) {
+        Ok(x) => Ok(x.unwrap_or(DEFAULT_FOREGROUND_SPAN_EXPORT_CUTOFF)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(DEFAULT_FOREGROUND_SPAN_EXPORT_CUTOFF)
+        }
+    }
 }
 
 /// Return the maximum time for sending log record batches when using a background node
 pub fn background_log_export_cutoff() -> ockam_core::Result<Duration> {
-    get_env_with_default(
-        OCKAM_BACKGROUND_LOG_EXPORT_CUTOFF,
-        DEFAULT_BACKGROUND_LOG_EXPORT_CUTOFF,
-    )
+    match get_env(OCKAM_BACKGROUND_LOG_EXPORT_CUTOFF) {
+        Ok(x) => Ok(x.unwrap_or(DEFAULT_BACKGROUND_LOG_EXPORT_CUTOFF)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(DEFAULT_BACKGROUND_LOG_EXPORT_CUTOFF)
+        }
+    }
 }
 
 /// Return the maximum time for sending span batches when using a background node
 pub fn background_span_export_portal_cutoff() -> ockam_core::Result<Duration> {
-    get_env_with_default(
-        OCKAM_BACKGROUND_SPAN_EXPORT_CUTOFF,
-        DEFAULT_BACKGROUND_SPAN_EXPORT_CUTOFF,
-    )
+    match get_env(OCKAM_BACKGROUND_SPAN_EXPORT_CUTOFF) {
+        Ok(x) => Ok(x.unwrap_or(DEFAULT_BACKGROUND_SPAN_EXPORT_CUTOFF)),
+        Err(err) => {
+            eprintln!("{err}");
+            Ok(DEFAULT_BACKGROUND_SPAN_EXPORT_CUTOFF)
+        }
+    }
 }
 
 /// Delete the opentelemetry node and recreate it to restart the inlet
